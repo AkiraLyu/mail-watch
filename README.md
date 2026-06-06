@@ -67,20 +67,23 @@ tests/
 4. Create a Telegram bot with BotFather, get the bot token, and find your
    target chat id.
 
-5. Copy the environment example and fill in your real values:
+5. Run the installer. It writes the Telegram env file, creates a Mirador config
+   from the selected backend template when missing, renders the user systemd
+   unit, and enables it:
 
    ```sh
-   mkdir -p ~/.config/mail-watch
-   cp config/mail-watch.env.example ~/.config/mail-watch/mail-watch.env
-   chmod 600 ~/.config/mail-watch/mail-watch.env
+   scripts/install-systemd-user.sh --backend imap
    ```
 
-6. Copy one Mirador template to `~/.config/mirador/config.toml`, edit the mail
-   account settings, then test it:
+   If you omit the Telegram arguments in an interactive terminal, the installer
+   prompts for them. For a headless Raspberry Pi that should keep watching after
+   logout, add `--enable-linger`. For non-interactive setup, pass
+   `--telegram-bot-token TOKEN --telegram-chat-id CHAT_ID`.
+
+6. Edit the generated Mirador config and test it:
 
    ```sh
-   mkdir -p ~/.config/mirador
-   cp config/mirador.imap.example.toml ~/.config/mirador/config.toml
+   editor ~/.config/mirador/config.toml
    mirador -c ~/.config/mirador/config.toml check
    ```
 
@@ -95,26 +98,29 @@ tests/
    scripts/send-telegram-mail.sh
    ```
 
-8. Run the watcher:
+8. Start the watcher:
 
    ```sh
-   MAIL_WATCH_HOME="$PWD" mirador -c ~/.config/mirador/config.toml watch
+   systemctl --user start mail-watch.service
+   journalctl --user -u mail-watch.service -f
    ```
 
 ## systemd User Service
 
-After the environment and Mirador config files exist, install the user service:
+The installer is the recommended deployment path:
 
 ```sh
-scripts/install-systemd-user.sh
+scripts/install-systemd-user.sh --telegram-bot-token TOKEN --telegram-chat-id CHAT_ID
 ```
 
-The installer writes `~/.config/systemd/user/mail-watch.service` and keeps
-existing config files if they are already present. Start it after editing the
-two config files:
+It creates or updates `~/.config/mail-watch/mail-watch.env`, creates
+`~/.config/mirador/config.toml` from the selected template when it is missing,
+writes `~/.config/systemd/user/mail-watch.service`, reloads the user systemd
+manager, and enables the unit by default. Start it after editing the mail
+account settings:
 
 ```sh
-systemctl --user enable --now mail-watch.service
+systemctl --user start mail-watch.service
 journalctl --user -u mail-watch.service -f
 ```
 
@@ -125,10 +131,18 @@ lingering once:
 loginctl enable-linger "$USER"
 ```
 
-You can also let the installer enable or start the service:
+You can also let the installer start the service immediately:
 
 ```sh
-scripts/install-systemd-user.sh --enable --start
+scripts/install-systemd-user.sh --telegram-bot-token TOKEN --telegram-chat-id CHAT_ID --start
+```
+
+Useful installer options:
+
+```sh
+scripts/install-systemd-user.sh --help
+scripts/install-systemd-user.sh --no-enable
+scripts/install-systemd-user.sh --backend maildir --telegram-bot-token TOKEN --telegram-chat-id CHAT_ID
 ```
 
 ## Mirador Templates

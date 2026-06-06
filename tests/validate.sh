@@ -94,6 +94,10 @@ MAIL_WATCH_TEST_SYSTEMCTL_LOG=$systemctl_log \
   scripts/install-systemd-user.sh \
     --backend maildir \
     --mirador-bin "$fake_bin/mirador" \
+    --telegram-bot-token "987654321:test-token" \
+    --telegram-chat-id "-1001234567890" \
+    --telegram-message-prefix "Pi's mail watch" \
+    --mail-watch-account "personal" \
     --service-name mail-watch-test >/dev/null
 
 service_file=$fake_home/.config/systemd/user/mail-watch-test.service
@@ -114,8 +118,25 @@ grep -F '{{' "$service_file" >/dev/null \
   && fail "service file still contains template placeholders"
 grep -F 'maildir.root' "$mirador_config" >/dev/null \
   || fail "installer did not copy requested Maildir template"
+grep -F "TELEGRAM_BOT_TOKEN='987654321:test-token'" "$env_file" >/dev/null \
+  || fail "installer did not write Telegram bot token"
+grep -F "TELEGRAM_CHAT_ID='-1001234567890'" "$env_file" >/dev/null \
+  || fail "installer did not write Telegram chat id"
+env_values=$(
+  env -i sh -c '. "$1"; printf "%s\n%s\n%s\n%s\n" "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_ID" "$TELEGRAM_MESSAGE_PREFIX" "$MAIL_WATCH_ACCOUNT"' sh "$env_file"
+)
+contains "$env_values" '987654321:test-token' \
+  || fail "generated env file cannot load Telegram bot token"
+contains "$env_values" '-1001234567890' \
+  || fail "generated env file cannot load Telegram chat id"
+contains "$env_values" "Pi's mail watch" \
+  || fail "installer did not write Telegram message prefix"
+contains "$env_values" 'personal' \
+  || fail "installer did not write mail-watch account"
 grep -F -- '--user daemon-reload' "$systemctl_log" >/dev/null \
   || fail "installer did not reload user systemd manager"
+grep -F -- '--user enable mail-watch-test.service' "$systemctl_log" >/dev/null \
+  || fail "installer did not enable user service"
 pass "systemd installer dry run"
 
 printf 'validate: all checks passed\n'
