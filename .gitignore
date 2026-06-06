@@ -1,0 +1,21 @@
+.env
+*.env
+!.env.example
+!config/*.env.example
+
+# Local runtime files
+*.log
+tmp/
+.cache/
+
+# Secrets and local Mirador configs
+config/mail-watch.env
+config/mirador.local.toml
+config/*.local.toml
+
+# Editor noise
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
