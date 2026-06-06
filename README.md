@@ -159,6 +159,7 @@ Useful local checks:
 ```sh
 scripts/send-telegram-mail.sh --help
 scripts/send-telegram-mail.sh --dry-run
+tests/validate.sh
 ```
 
 ## Notes
