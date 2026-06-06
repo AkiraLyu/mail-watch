@@ -1,0 +1,16 @@
+# Mirador Maildir example for mail-watch.
+#
+# Copy this file to ~/.config/mirador/config.toml and replace every example
+# value before starting the watcher.
+
+[accounts.personal]
+default = true
+
+# Use "." for the root Maildir, or a mailbox name relative to maildir.root.
+mailbox = "."
+
+# Maildir backend. The root usually contains cur/, new/, and tmp/ for the root
+# mailbox or Maildir++ subdirectories such as .Archive/.
+maildir.root = "~/Mail/personal"
+
+hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'

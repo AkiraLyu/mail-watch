@@ -1,0 +1,26 @@
+# Mirador IMAP example for mail-watch.
+#
+# Copy this file to ~/.config/mirador/config.toml and replace every example
+# value before starting the watcher.
+
+[accounts.personal]
+default = true
+mailbox = "INBOX"
+
+# IMAP IDLE backend.
+imap.server = "imaps://imap.example.com"
+imap.sasl.plain.username = "user@example.com"
+
+# Prefer a password manager command on a Raspberry Pi.
+imap.sasl.plain.password.command = "pass show mail/example.com/user"
+
+# If your provider requires RFC 2971 IMAP ID, uncomment this line.
+# Common examples include QQ Mail and some hosted providers.
+#imap.id.auto = true
+
+# Alternative for quick local testing only:
+#imap.sasl.plain.password.raw = "replace-with-an-app-password"
+
+# Mirador exports subject, sender, sender_address, mailbox, id, and related
+# fields as environment variables for this shell command.
+hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'

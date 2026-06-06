@@ -1,0 +1,18 @@
+[Unit]
+Description=Watch mail with Mirador and send Telegram notifications
+Documentation=https://github.com/pimalaya/mirador
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Environment="MAIL_WATCH_HOME={{MAIL_WATCH_HOME}}"
+Environment="MAIL_WATCH_ENV_FILE={{MAIL_WATCH_ENV_FILE}}"
+WorkingDirectory={{MAIL_WATCH_HOME}}
+ExecStart={{MIRADOR_BIN}} -c {{MIRADOR_CONFIG}} watch
+Restart=always
+RestartSec=20
+SyslogIdentifier=mail-watch
+
+[Install]
+WantedBy=default.target

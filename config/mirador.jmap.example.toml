@@ -1,0 +1,21 @@
+# Mirador JMAP example for mail-watch.
+#
+# Copy this file to ~/.config/mirador/config.toml and replace every example
+# value before starting the watcher.
+
+[accounts.personal]
+default = true
+
+# JMAP watches mailbox ids, not display names. Look the id up with your provider
+# tooling or himalaya before using this template.
+mailbox = "replace-with-inbox-mailbox-id"
+
+# JMAP EventSource backend.
+jmap.server = "https://api.fastmail.com/jmap/session"
+jmap.auth.bearer.token.command = "pass show mail/fastmail-jmap-token"
+
+# Alternative HTTP Basic example:
+#jmap.auth.basic.username = "user@example.com"
+#jmap.auth.basic.password.command = "pass show mail/example.com/user"
+
+hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
