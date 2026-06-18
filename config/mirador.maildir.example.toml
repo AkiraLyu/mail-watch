@@ -13,4 +13,4 @@ mailbox = "."
 # mailbox or Maildir++ subdirectories such as .Archive/.
 maildir.root = "~/Mail/personal"
 
-hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
+hooks.on-message-added.cmd = '"${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'

@@ -18,4 +18,4 @@ jmap.auth.bearer.token.command = "pass show mail/fastmail-jmap-token"
 #jmap.auth.basic.username = "user@example.com"
 #jmap.auth.basic.password.command = "pass show mail/example.com/user"
 
-hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
+hooks.on-message-added.cmd = '"${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'

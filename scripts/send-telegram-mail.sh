@@ -88,6 +88,7 @@ project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 
 cli_dry_run=false
 env_file=${MAIL_WATCH_ENV_FILE:-}
+service_account=${MAIL_WATCH_ACCOUNT:-}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -132,6 +133,10 @@ if [ -n "$env_file" ]; then
   # shellcheck disable=SC1090
   . "$env_file"
   set +a
+fi
+
+if [ -n "$service_account" ]; then
+  MAIL_WATCH_ACCOUNT=$service_account
 fi
 
 dry_run=${MAIL_WATCH_DRY_RUN:-false}

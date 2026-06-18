@@ -8,8 +8,9 @@ After=network-online.target
 Type=simple
 Environment="MAIL_WATCH_HOME={{MAIL_WATCH_HOME}}"
 Environment="MAIL_WATCH_ENV_FILE={{MAIL_WATCH_ENV_FILE}}"
+Environment="MAIL_WATCH_ACCOUNT={{MAIL_WATCH_ACCOUNT}}"
 WorkingDirectory={{MAIL_WATCH_HOME}}
-ExecStart={{MIRADOR_BIN}} -c {{MIRADOR_CONFIG}} watch
+ExecStart={{MIRADOR_BIN}} -c {{MIRADOR_CONFIG}} {{MIRADOR_ACCOUNT_ARGS}}watch
 Restart=always
 RestartSec=20
 SyslogIdentifier=mail-watch

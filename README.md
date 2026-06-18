@@ -80,6 +80,16 @@ tests/
    logout, add `--enable-linger`. For non-interactive setup, pass
    `--telegram-bot-token TOKEN --telegram-chat-id CHAT_ID`.
 
+   To supervise more than one Mirador account from the same config file:
+
+   ```sh
+   scripts/install-systemd-user.sh --accounts personal,work
+   ```
+
+   This creates and enables `mail-watch@personal.service` and
+   `mail-watch@work.service`; each unit runs its own `mirador -a ACCOUNT watch`
+   process.
+
 6. Edit the generated Mirador config and test it:
 
    ```sh
@@ -155,11 +165,13 @@ scripts/install-systemd-user.sh --backend maildir --telegram-bot-token TOKEN --t
 All templates use:
 
 ```toml
-hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
+hooks.on-message-added.cmd = '"${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
 ```
 
 The systemd service sets `MAIL_WATCH_HOME` automatically. For manual runs from
-another directory, export `MAIL_WATCH_HOME=/path/to/mail-watch`.
+another directory, export `MAIL_WATCH_HOME=/path/to/mail-watch`. Multi-account
+systemd units also set `MAIL_WATCH_ACCOUNT` so Telegram messages show the
+account name.
 
 ## Telegram Hook
 

@@ -17,6 +17,9 @@ Options:
                                 Default: imap
   --config PATH                 Mirador config path.
                                 Default: ~/.config/mirador/config.toml
+  --account NAME                Watch one named Mirador account.
+  --accounts A,B                Watch multiple Mirador accounts with one
+                                systemd unit per account.
   --env-file PATH               mail-watch env file path.
                                 Default: ~/.config/mail-watch/mail-watch.env
   --mirador-bin PATH            Mirador binary path. Default: command -v mirador
@@ -144,6 +147,46 @@ sed_replacement_escape() {
   printf '%s' "$1" | sed 's/[|&]/\\&/g'
 }
 
+validate_account_name() {
+  case "${1:-}" in
+    *[!A-Za-z0-9_.@-]* | "")
+      die "account name contains unsupported characters: $1"
+      ;;
+  esac
+}
+
+render_service() {
+  account=$1
+
+  if [ -n "$account" ]; then
+    validate_account_name "$account"
+    unit_name=$service_name@$account.service
+    account_args="-a $account "
+    service_account=$account
+  else
+    unit_name=$service_name.service
+    account_args=
+    service_account=${mail_watch_account:-}
+  fi
+
+  service_path=$systemd_user_dir/$unit_name
+  account_escaped=$(sed_replacement_escape "$service_account")
+  account_args_escaped=$(sed_replacement_escape "$account_args")
+
+  sed \
+    -e "s|{{MAIL_WATCH_HOME}}|$mail_watch_home_escaped|g" \
+    -e "s|{{MAIL_WATCH_ENV_FILE}}|$env_file_escaped|g" \
+    -e "s|{{MAIL_WATCH_ACCOUNT}}|$account_escaped|g" \
+    -e "s|{{MIRADOR_CONFIG}}|$mirador_config_escaped|g" \
+    -e "s|{{MIRADOR_BIN}}|$mirador_bin_escaped|g" \
+    -e "s|{{MIRADOR_ACCOUNT_ARGS}}|$account_args_escaped|g" \
+    "$project_dir/systemd/mail-watch.service.template" >"$service_path"
+
+  chmod 600 "$service_path"
+  rendered_units="$rendered_units $unit_name"
+  info "installed $service_path"
+}
+
 template_for_backend() {
   case "$1" in
     imap) printf '%s/config/mirador.imap.example.toml\n' "$project_dir" ;;
@@ -158,6 +201,7 @@ project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 
 backend=imap
 mirador_config=${MIRADOR_CONFIG:-"$HOME/.config/mirador/config.toml"}
+accounts_raw=
 env_file=${MAIL_WATCH_ENV_FILE:-"$HOME/.config/mail-watch/mail-watch.env"}
 service_name=mail-watch
 enable_service=true
@@ -208,6 +252,22 @@ while [ "$#" -gt 0 ]; do
       ;;
     --config=*)
       mirador_config=${1#--config=}
+      ;;
+    --account)
+      shift
+      [ "$#" -gt 0 ] || die "--account requires a value"
+      accounts_raw=$1
+      ;;
+    --account=*)
+      accounts_raw=${1#--account=}
+      ;;
+    --accounts)
+      shift
+      [ "$#" -gt 0 ] || die "--accounts requires a value"
+      accounts_raw=$1
+      ;;
+    --accounts=*)
+      accounts_raw=${1#--accounts=}
       ;;
     --env-file)
       shift
@@ -523,23 +583,27 @@ fi
 
 systemd_user_dir=$HOME/.config/systemd/user
 install -d -m 700 "$systemd_user_dir"
-service_path=$systemd_user_dir/$service_name.service
+rendered_units=
 
 mail_watch_home_escaped=$(sed_replacement_escape "$project_dir")
 env_file_escaped=$(sed_replacement_escape "$env_file")
 mirador_config_escaped=$(sed_replacement_escape "$mirador_config")
 mirador_bin_escaped=$(sed_replacement_escape "$mirador_bin")
 
-sed \
-  -e "s|{{MAIL_WATCH_HOME}}|$mail_watch_home_escaped|g" \
-  -e "s|{{MAIL_WATCH_ENV_FILE}}|$env_file_escaped|g" \
-  -e "s|{{MIRADOR_CONFIG}}|$mirador_config_escaped|g" \
-  -e "s|{{MIRADOR_BIN}}|$mirador_bin_escaped|g" \
-  "$project_dir/systemd/mail-watch.service.template" >"$service_path"
+if [ -n "$accounts_raw" ]; then
+  old_ifs=$IFS
+  IFS=,
+  for account in $accounts_raw; do
+    IFS=$old_ifs
+    render_service "$account"
+    IFS=,
+  done
+  IFS=$old_ifs
+else
+  render_service ""
+fi
 
-chmod 600 "$service_path"
 systemctl --user daemon-reload
-info "installed $service_path"
 
 if [ "$enable_linger" = true ]; then
   command -v loginctl >/dev/null 2>&1 || die "loginctl is required for --enable-linger"
@@ -548,24 +612,29 @@ if [ "$enable_linger" = true ]; then
 fi
 
 if [ "$enable_service" = true ]; then
-  systemctl --user enable "$service_name.service"
-  info "enabled $service_name.service"
+  for unit in $rendered_units; do
+    systemctl --user enable "$unit"
+    info "enabled $unit"
+  done
 fi
 
 if [ "$start_service" = true ]; then
-  systemctl --user restart "$service_name.service"
-  info "started $service_name.service"
+  for unit in $rendered_units; do
+    systemctl --user restart "$unit"
+    info "started $unit"
+  done
 fi
 
 cat <<EOF
 
 Installed mail-watch user service.
+Units:$rendered_units
 
 Next checks:
   1. Edit $env_file if you need to adjust Telegram options
   2. Edit $mirador_config
   3. Run: $project_dir/scripts/send-telegram-mail.sh --dry-run
   4. Run: mirador -c $mirador_config check
-  5. Run: systemctl --user start $service_name.service
-  6. Logs: journalctl --user -u $service_name.service -f
+  5. Run: systemctl --user start UNIT_NAME
+  6. Logs: journalctl --user -u UNIT_NAME -f
 EOF

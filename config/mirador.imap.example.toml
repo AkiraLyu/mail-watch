@@ -23,4 +23,4 @@ imap.sasl.plain.password.command = "pass show mail/example.com/user"
 
 # Mirador exports subject, sender, sender_address, mailbox, id, and related
 # fields as environment variables for this shell command.
-hooks.on-message-added.cmd = 'MAIL_WATCH_ACCOUNT=personal "${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
+hooks.on-message-added.cmd = '"${MAIL_WATCH_HOME:-$HOME/mail-watch}/scripts/send-telegram-mail.sh"'
